@@ -4,13 +4,9 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"os/signal"
-	"syscall"
-	"time"
 
-	"github.com/urfave/cli"
 	"github.com/coreos/go-semver/semver"
-	"github.com/fatih/color"
+	"github.com/urfave/cli"
 	De "github.com/visionmedia/go-debug"
 )
 
@@ -23,52 +19,41 @@ func main() {
 	app.Action = run
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
-			Name:   "example, e",
-			EnvVar: "MESHCHAIN_UTIL_EXAMPLE",
-			Usage:  "Example string flag",
+			Name:   "identity-filepath, i",
+			EnvVar: "MESHCHAIN_UTIL_IDENTITY_FILEPATH",
+			Usage:  "Path to an RSA pem file",
+			Value:  "~/.ssh/id_rsa",
 		},
 	}
+	app.Commands = []cli.Command{
+		{
+			Name:    "create",
+			Aliases: []string{"c"},
+			Usage:   "Create a new meshchain record",
+			Action:  Create,
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:   "data-filepath, d",
+					EnvVar: "MESHCHAIN_UTIL_DATA_FILEPATH",
+					Usage:  "Path to a data file",
+					Value:  "~/.ssh/id_rsa",
+				},
+			},
+		},
+		{
+			Name:    "version",
+			Aliases: []string{"v"},
+			Usage:   "Print the current version",
+			Action:  cli.ShowVersion,
+		},
+	}
+
 	app.Run(os.Args)
 }
 
 func run(context *cli.Context) {
-	example := getOpts(context)
-
-	sigTerm := make(chan os.Signal)
-	signal.Notify(sigTerm, syscall.SIGTERM)
-
-	sigTermReceived := false
-
-	go func() {
-		<-sigTerm
-		fmt.Println("SIGTERM received, waiting to exit")
-		sigTermReceived = true
-	}()
-
-	for {
-		if sigTermReceived {
-			fmt.Println("I'll be back.")
-			os.Exit(0)
-		}
-
-		debug("meshchain-util.loop: %v", example)
-		time.Sleep(1 * time.Second)
-	}
-}
-
-func getOpts(context *cli.Context) string {
-	example := context.String("example")
-
-	if example == "" {
-		cli.ShowAppHelp(context)
-
-		if example == "" {
-			color.Red("  Missing required flag --example or MESHCHAIN_UTIL_EXAMPLE")
-		}
-		os.Exit(1)
-	}
-
-	return example
+	cli.ShowAppHelp(context)
+	os.Exit(1)
 }
 
 func version() string {
